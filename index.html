@@ -4,57 +4,348 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ghi chú Online</title>
-  <!-- Giao diện tối giản với Pico.css -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
   <link rel="manifest" href="manifest.json">
+  <style>
+    body { padding-top: 1rem; }
+    .header-nav { border-bottom: 1px solid var(--muted-border-color); margin-bottom: 1.5rem; padding-bottom: 0.5rem; }
+    .toolbar { display: flex; gap: 10px; margin-bottom: 1rem; }
+    .toolbar input, .toolbar select { margin-bottom: 0; }
+    
+    /* CSS cho thẻ (Card) */
+    .item-card { 
+      margin-bottom: 1rem; 
+      padding: 1rem; 
+      border: 1px solid var(--muted-border-color); 
+      border-radius: 8px; 
+      cursor: pointer;
+      /* Ngăn chặn bôi đen văn bản khi nhấn giữ trên điện thoại */
+      -webkit-user-select: none; 
+      user-select: none; 
+      /* Cho phép cuộn dọc bình thường */
+      touch-action: pan-y; 
+      transition: background-color 0.2s;
+    }
+    /* Hiệu ứng khi chạm vào thẻ */
+    .item-card:active { background-color: var(--muted-border-color); }
+    
+    .item-content { 
+      white-space: pre-wrap; 
+      word-break: break-word; 
+      font-size: 1rem; 
+      display: block; 
+    } 
+    
+    .badge { border: 1px solid var(--primary); color: var(--primary); padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+    
+    /* CSS cho các Icon */
+    .icon { width: 1.2em; height: 1.2em; vertical-align: middle; margin-right: 4px; }
+    .icon-sm { width: 1.2em; height: 1.2em; vertical-align: middle; } 
+    
+    /* Footer */
+    .app-footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--muted-border-color); text-align: center; }
+    .copy-container { display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap; }
+  </style>
 </head>
 <body>
   <main class="container">
-    <nav>
-      <ul><li><strong>Ghi chú của tôi</strong></li></ul>
-    </nav>
     
-    <article>
-      <header>Thêm nội dung mới</header>
-      <form id="addForm">
-        <select id="phanLoai" required>
-          <option value="" selected disabled>Chọn danh mục...</option>
-          <!-- Option sẽ được render bằng JS -->
-        </select>
-        <input type="text" id="noiDung" placeholder="Nhập nội dung (Không trùng lặp)" required>
-        <button type="submit">Lưu lại</button>
+    <!-- THANH ĐIỀU HƯỚNG & CHUYỂN TAB -->
+    <nav class="header-nav">
+      <ul>
+        <li>
+          <h2 id="pageTitle" style="margin: 0; display: flex; align-items: center;">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            Nội Dung
+          </h2>
+        </li>
+      </ul>
+      <ul>
+        <li>
+          <button class="outline" onclick="toggleTab()" style="padding: 0.5rem 1rem; font-size: 0.9rem; display: flex; align-items: center;">
+            <svg class="icon" style="margin-right: 4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+            Đổi Tab
+          </button>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- THANH CÔNG CỤ: TÌM KIẾM & LỌC -->
+    <div class="toolbar">
+      <input type="search" id="searchInput" placeholder="Tìm kiếm..." oninput="renderData()">
+      <select id="sortSelect" onchange="renderData()" style="width: auto;">
+        <option value="newest">Mới nhất trước</option>
+        <option value="oldest">Cũ nhất trước</option>
+        <option value="az">Từ A - Z</option>
+      </select>
+    </div>
+
+    <!-- FORM THÊM DỮ LIỆU -->
+    <article style="padding: 1rem; margin-bottom: 2rem;">
+      <h5 id="formTitle">Thêm Nội Dung</h5>
+      <form id="addForm" onsubmit="submitForm(event)">
+        <div id="formInputs"></div>
+        <button type="submit" id="submitBtn" style="margin-top: 1rem; margin-bottom: 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          Lưu lại
+        </button>
       </form>
     </article>
 
-    <div id="danhSachNoidung">
-      <!-- Dữ liệu render tại đây -->
+    <!-- DANH SÁCH HIỂN THỊ -->
+    <div id="dataContainer">
       <p aria-busy="true">Đang tải dữ liệu...</p>
     </div>
+
+    <!-- FOOTER CHỨA LINK TRANG WEB -->
+    <footer class="app-footer">
+      <div class="copy-container">
+        <a href="https://gptlohoi-del.github.io/onlinenote/" target="_blank" style="color: var(--primary);">
+          https://gptlohoi-del.github.io/onlinenote/
+        </a>
+        <button class="outline" onclick="copyLink()" style="padding: 0.2rem 0.8rem; width: auto; margin: 0; font-size: 0.8rem; border-radius: 4px;">
+          Copy link
+        </button>
+      </div>
+    </footer>
+
   </main>
 
   <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbxhKksoiitqyPw2KD9VH72EHK--NxBapMsvhwTFFq1freAURex8BYQFg1FZuDoFZKUi/exec';
+    // ==========================================
+    // 1. CẤU HÌNH API
+    // ==========================================
+    const API_URL = 'https://script.google.com/macros/s/AKfycbxhKksoiitqyPw2KD9VH72EHK--NxBapMsvhwTFFq1freAURex8BYQFg1FZuDoFZKUi/exec'; // <--- ĐIỀN LINK WEB APP CỦA BẠN VÀO ĐÂY (Giữ nguyên link bạn đang xài)
+    
+    let currentTab = 'NOI DUNG'; 
+    let dataNoiDung = []; 
+    let dataDanhMuc = []; 
+    let pressTimer; 
 
-    // Đăng ký Service Worker cho PWA
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').then(() => console.log('PWA Ready!'));
-    }
-
-    // Hàm gọi API đơn giản
-    async function loadData() {
-      const res = await fetch(`${API_URL}?action=getNoiDung`);
-      const data = await res.json();
+    function formatDate(dateString) {
+      if (!dateString) return '';
+      const d = new Date(dateString);
+      if (isNaN(d.getTime())) return dateString; 
       
-      const html = data.slice(1).map(row => `
-        <details>
-          <summary>${row[1]} <small>(${row[0]})</small></summary>
-          <p>Thời gian ghi: ${row[2]}</p>
-        </details>
-      `).join('');
-      document.getElementById('danhSachNoidung').innerHTML = html;
+      const pad = (n) => n.toString().padStart(2, '0');
+      return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     }
 
-    loadData();
+    // ==========================================
+    // 2. LẤY DỮ LIỆU
+    // ==========================================
+    async function loadAllData() {
+      try {
+        document.getElementById('dataContainer').innerHTML = '<p aria-busy="true">Đang tải dữ liệu...</p>';
+        const [resND, resDM] = await Promise.all([
+          fetch(`${API_URL}?sheetName=NOI DUNG`).then(r => r.json()),
+          fetch(`${API_URL}?sheetName=DANH MUC`).then(r => r.json())
+        ]);
+        if(resND.success) dataNoiDung = resND.data.slice(1);
+        if(resDM.success) dataDanhMuc = resDM.data.slice(1);
+        renderForm();
+        renderData();
+      } catch (error) {
+        alert("Lỗi kết nối tới Server. Hãy kiểm tra console.");
+        console.error(error);
+      }
+    }
+
+    // ==========================================
+    // 3. ĐỔI TAB & VẼ FORM
+    // ==========================================
+    function toggleTab() {
+      currentTab = (currentTab === 'NOI DUNG') ? 'DANH MUC' : 'NOI DUNG';
+      
+      const pageTitle = document.getElementById('pageTitle');
+      if (currentTab === 'NOI DUNG') {
+        pageTitle.innerHTML = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg> Nội Dung`;
+      } else {
+        pageTitle.innerHTML = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> Danh Mục`;
+      }
+
+      document.getElementById('formTitle').innerText = currentTab === 'NOI DUNG' ? 'Thêm Nội Dung' : 'Thêm Danh Mục';
+      document.getElementById('searchInput').value = '';
+      document.getElementById('sortSelect').value = 'newest';
+      
+      renderForm();
+      renderData();
+    }
+
+    function renderForm() {
+      const formInputs = document.getElementById('formInputs');
+      if (currentTab === 'NOI DUNG') {
+        let optionsHTML = dataDanhMuc.map(row => `<option value="${row[0]}">${row[0]}</option>`).join('');
+        formInputs.innerHTML = `
+          <div>
+            <select id="inputPhanLoai" required style="margin-bottom: 1rem;">
+              <option value="" selected disabled>Chọn Danh Mục...</option>
+              ${optionsHTML}
+            </select>
+            <textarea id="inputNoiDung" placeholder="Nhập Nội dung (Không trùng lặp)" required 
+              style="resize: vertical; min-height: 120px; margin-bottom: 0;"></textarea>
+          </div>
+        `;
+      } else {
+        formInputs.innerHTML = `
+          <input type="text" id="inputPhanLoai" placeholder="Tên Phân loại mới (Không trùng lặp)" required>
+        `;
+      }
+    }
+
+    // ==========================================
+    // 4. HIỂN THỊ DỮ LIỆU & BẮT SỰ KIỆN NHẤN GIỮ
+    // ==========================================
+    function renderData() {
+      const container = document.getElementById('dataContainer');
+      const searchText = document.getElementById('searchInput').value.toLowerCase();
+      const sortType = document.getElementById('sortSelect').value;
+      
+      let list = currentTab === 'NOI DUNG' ? [...dataNoiDung] : [...dataDanhMuc];
+
+      if (searchText) list = list.filter(row => row.join(' ').toLowerCase().includes(searchText));
+
+      if (sortType === 'newest') list.reverse(); 
+      else if (sortType === 'az') {
+        const sortIndex = currentTab === 'NOI DUNG' ? 1 : 0;
+        list.sort((a, b) => String(a[sortIndex]).localeCompare(String(b[sortIndex])));
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = '<p style="color: var(--muted-color); text-align: center;">Không có dữ liệu phù hợp.</p>';
+        return;
+      }
+
+      const clockIcon = `<svg class="icon-sm" style="margin-right: 4px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+
+      const html = list.map(row => {
+        // Đã sửa lỗi: Ép kiểu thành String trước khi dùng lệnh replace
+        const rawId = currentTab === 'NOI DUNG' ? row[1] : row[0];
+        const safeId = String(rawId).replace(/"/g, '&quot;'); 
+
+        const contentHTML = currentTab === 'NOI DUNG' ? `
+          <strong class="item-content">${row[1]}</strong>
+          <div style="margin-top: 1rem; display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-size: 0.85rem; color: var(--muted-color); display: flex; align-items: center; gap: 8px;">
+              <span class="badge">${row[0]}</span> 
+              <span style="display: flex; align-items: center;">${clockIcon} ${formatDate(row[2])}</span>
+            </div>
+          </div>
+        ` : `
+          <strong class="item-content">${row[0]}</strong>
+          <div style="margin-top: 0.8rem; font-size: 0.85rem; color: var(--muted-color); display: flex; align-items: center;">
+            ${clockIcon} Tạo lúc: ${formatDate(row[1])}
+          </div>
+        `;
+
+        return `
+          <div class="item-card" 
+               title="Nhấn giữ để xóa"
+               data-id="${safeId}"
+               onmousedown="startPress(this)" 
+               onmouseup="cancelPress()" 
+               onmouseleave="cancelPress()" 
+               ontouchstart="startPress(this)" 
+               ontouchend="cancelPress()" 
+               ontouchmove="cancelPress()"
+               oncontextmenu="event.preventDefault()">
+            ${contentHTML}
+          </div>`;
+      }).join('');
+      
+      container.innerHTML = html;
+    }
+
+    // ==========================================
+    // 5. LOGIC XỬ LÝ NHẤN GIỮ (LONG PRESS)
+    // ==========================================
+    function startPress(element) {
+      const idValue = element.getAttribute('data-id');
+      
+      pressTimer = setTimeout(() => {
+        if (navigator.vibrate) navigator.vibrate(50);
+        deleteItem(idValue);
+      }, 700); 
+    }
+
+    function cancelPress() {
+      clearTimeout(pressTimer);
+    }
+
+    // ==========================================
+    // 6. THÊM & XÓA DỮ LIỆU
+    // ==========================================
+    async function submitForm(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.setAttribute('aria-busy', 'true');
+      btn.innerText = 'Đang lưu...';
+
+      let dataToSave = [];
+      const now = new Date().toLocaleString('vi-VN');
+
+      if (currentTab === 'NOI DUNG') {
+        dataToSave = [
+          document.getElementById('inputPhanLoai').value,
+          document.getElementById('inputNoiDung').value,
+          now
+        ];
+      } else {
+        dataToSave = [
+          document.getElementById('inputPhanLoai').value,
+          now
+        ];
+      }
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'CREATE', sheetName: currentTab, data: dataToSave })
+        });
+        const result = await res.json();
+        
+        if(result.error) alert(result.error);
+        else {
+          document.getElementById('addForm').reset();
+          await loadAllData();
+        }
+      } catch (err) {
+        alert("Lỗi khi lưu dữ liệu");
+      }
+      
+      btn.removeAttribute('aria-busy');
+      btn.innerText = 'Lưu lại';
+    }
+
+    async function deleteItem(idValue) {
+      if(!confirm(`Bạn có chắc chắn muốn xóa "${idValue}" không?`)) return;
+      document.getElementById('dataContainer').innerHTML = '<p aria-busy="true">Đang xóa dữ liệu...</p>';
+      
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'DELETE', sheetName: currentTab, idValue: idValue })
+        });
+        const result = await res.json();
+        if(result.error) alert(result.error);
+        await loadAllData();
+      } catch (err) {
+        alert("Lỗi khi xóa dữ liệu");
+      }
+    }
+
+    // ==========================================
+    // 7. COPY LINK 
+    // ==========================================
+    function copyLink() {
+      const linkToCopy = "https://gptlohoi-del.github.io/onlinenote/";
+      navigator.clipboard.writeText(linkToCopy).then(() => {
+        alert("Đã copy link thành công!");
+      }).catch(err => {
+        alert("Có lỗi khi copy, vui lòng copy thủ công.");
+      });
+    }
+
+    loadAllData();
   </script>
 </body>
 </html>
