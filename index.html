@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang Liên Kết Của Tôi</title>
+    
+    <!-- Cấu hình PWA -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <link rel="apple-touch-icon" href="./icon-192x192.png">
+
+    <style>
+        /* Thiết lập cơ bản */
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f3f4f6;
+            --text-color: #1f2937;
+            --button-bg: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            /* Thêm khoảng trống ở đáy trang để không bị thanh footer đè lên nội dung */
+            padding-bottom: 80px; 
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        p.bio {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-bottom: 32px;
+        }
+
+        /* Links Section */
+        .links-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .link-card {
+            background-color: var(--button-bg);
+            padding: 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--text-color);
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .link-card:hover {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 15px 30px rgba(37, 99, 235, 0.3);
+            border-color: var(--primary-color);
+        }
+
+        footer {
+            margin-top: 50px;
+            font-size: 0.8rem;
+            color: #9ca3af;
+        }
+
+        /* --- CSS CHO PHẦN FOOTER CHỨA LINK VÀ MÃ QR --- */
+        .fixed-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: #ffffff;
+            border-top: 1px solid #e5e7eb;
+            padding: 12px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            box-shadow: 0 -4px 6px -1px rgba(0,0,0,0.05);
+            z-index: 50;
+            box-sizing: border-box;
+        }
+
+        .link-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .link-group a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .link-group a:hover {
+            text-decoration: underline;
+        }
+
+        .btn-copy {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background-color: #eff6ff;
+            color: var(--primary-color);
+            border: 1px solid #bfdbfe;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-copy:hover {
+            background-color: #dbeafe;
+            transform: scale(0.95);
+        }
+
+        .qr-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .qr-label {
+            font-size: 10px;
+            font-weight: bold;
+            color: #9ca3af;
+            text-transform: uppercase;
+        }
+
+        .qr-thumbnail {
+            width: 48px;
+            height: 48px;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            background-color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+
+        .qr-thumbnail:hover {
+            border-color: var(--primary-color);
+        }
+
+        .qr-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        /* --- CSS CHO MODAL PHÓNG TO ẢNH QR --- */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 1;
+            transition: opacity 0.3s;
+        }
+
+        .modal.hidden {
+            display: none;
+            opacity: 0;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            max-width: 90vw;
+            width: 320px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #1e3a8a;
+            font-size: 1.125rem;
+            text-transform: uppercase;
+        }
+
+        .btn-close {
+            background: #f3f4f6;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #9ca3af;
+            transition: color 0.2s;
+        }
+
+        .btn-close:hover {
+            color: #ef4444;
+        }
+
+        .qr-large-container {
+            border: 1px solid #e0e7ff;
+            padding: 8px;
+            border-radius: 12px;
+            background-color: #f9fafb;
+            width: 100%;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+        }
+
+        .qr-large-container img {
+            width: 100%;
+            max-width: 250px;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .btn-download {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            background-color: var(--primary-color);
+            color: #ffffff;
+            font-weight: bold;
+            padding: 12px 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            transition: background-color 0.2s;
+            box-sizing: border-box;
+            border: none;
+        }
+
+        .btn-download:hover {
+            background-color: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LINK TỔNG</h1>
+        <p class="bio">Chào mừng Quý Thầy đến với trang tổng hợp liên kết. Hãy chọn một mục bên dưới!</p>
+
+        <div class="links-container">
+            <a href="https://danhba-six.vercel.app/" class="link-card" target="_blank" rel="noopener noreferrer">📞 DANH BẠ</a>
+            <a href="https://gptlohoi-del.github.io/tungkinh/" class="link-card" target="_blank" rel="noopener noreferrer">📘 PQ KHOA NGHI</a>
+            <a href="https://giaoly.vercel.app/" class="link-card" target="_blank" rel="noopener noreferrer">💡 TRA CỨU BÀI GIẢNG</a>
+            <a href="https://docs.google.com/document/d/1NOzNlvptUZdAU44KWExHSKis3bsB-xo4k82_vpu03as/edit?usp=sharing" class="link-card" target="_blank" rel="noopener noreferrer">💡 60 VỊ TDM</a>
+            <a href="https://lelevietnam99.github.io/test-record/" class="link-card" target="_blank" rel="noopener noreferrer">💡 LUYỆN PHÁT ÂM</a>
+            <a href="https://lelevietnam99.github.io/HOC-NOT-NHAC/" class="link-card" target="_blank" rel="noopener noreferrer">💡 LUYỆN ĐỌC NỐT NHẠC</a>
+            <a href="https://gptlohoi-del.github.io/chuyentone/" class="link-card" target="_blank" rel="noopener noreferrer">💡 CHUYỂN TONE NHẠC</a>      
+            <a href="https://gptlohoi-del.github.io/dansinh/" class="link-card" target="_blank" rel="noopener noreferrer">💡 PHÁT ÂM TIẾNG ANH</a>
+            <a href="https://gptlohoi-del.github.io/telepromter2/" class="link-card" target="_blank" rel="noopener noreferrer">💡 MÁY NHẮC CHỮ</a>
+            <a href="https://ttpq-exp.vercel.app/" class="link-card" target="_blank" rel="noopener noreferrer">💡 CHIA SẺ KINH NGHIỆM</a>
+            <a href="https://atgtpq-th8v.vercel.app/" class="link-card" target="_blank" rel="noopener noreferrer">🚘 AN TOÀN GIAO THÔNG</a>
+            <a href="https://gptlohoi-del.github.io/testguixe/" class="link-card" target="_blank" rel="noopener noreferrer">💡 WEB GỬI XE</a>
+            <a href="https://thientonphatquang.com/lien-he/" class="link-card" target="_blank" rel="noopener noreferrer">💡 THÔNG TIN CHÙA</a>
+            <a href="https://pheptinh-ruddy.vercel.app/" class="link-card" target="_blank" rel="noopener noreferrer">💻 PHÉP TÍNH</a>
+        </div>
+
+        
+    </div>
+
+    <!-- THANH FOOTER CỐ ĐỊNH CHỨA LINK VÀ QR -->
+    <div class="fixed-footer">
+        <div class="link-group">
+            <strong style="color: #1e3a8a;">LINK:</strong>
+            <a href="https://gptlohoi-del.github.io/linktong/" target="_blank">
+                https://gptlohoi-del.github.io/linktong/
+            </a>
+            <button onclick="copyToClipboard()" class="btn-copy">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                COPY
+            </button>
+        </div>
+        
+        <div class="qr-group">
+            <span class="qr-label">Mã QR:</span>
+            <!-- Bấm vào khung này sẽ mở Modal -->
+            <div onclick="openQRModal()" title="Nhấn để phóng to" class="qr-thumbnail">
+                <img src="./qrcode.png" alt="QR Code">
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL HIỂN THỊ MÃ QR PHÓNG TO -->
+    <div id="qrModal" class="modal hidden" onclick="closeQRModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            
+            <div class="modal-header">
+                <h3>Mã QR Trang Web</h3>
+                <button onclick="closeQRModal()" class="btn-close" title="Đóng">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <div class="qr-large-container">
+                <img src="./qrcode.png" alt="Mã QR Lớn">
+            </div>
+            
+            <!-- Nút tải ảnh QR về máy -->
+            <a href="./qrcode.png" download="qrcode-lienket.png" class="btn-download">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                TẢI MÃ QR VỀ MÁY
+            </a>
+
+        </div>
+    </div>
+
+    <!-- Script đăng ký Service Worker và các hàm xử lý QR/Copy -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('Service Worker đã đăng ký thành công:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Đăng ký Service Worker thất bại:', error);
+                    });
+            });
+        }
+
+        // Hàm copy link
+        function copyToClipboard() {
+            const linkToCopy = "https://gptlohoi-del.github.io/linktong/";
+            navigator.clipboard.writeText(linkToCopy).then(() => {
+                alert("Đã copy đường dẫn: " + linkToCopy);
+            }).catch(err => {
+                console.error('Không thể copy: ', err);
+                alert("Trình duyệt không hỗ trợ copy tự động!");
+            });
+        }
+
+        // Mở Modal xem ảnh QR lớn
+        function openQRModal() {
+            document.getElementById('qrModal').classList.remove('hidden');
+        }
+
+        // Đóng Modal xem ảnh QR lớn
+        function closeQRModal() {
+            document.getElementById('qrModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
