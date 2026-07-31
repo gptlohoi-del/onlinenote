@@ -1,4 +1,4 @@
-const CACHE_NAME = 'note-app-v1';
+const CACHE_NAME = 'note-app-v2';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting(); // Ép service worker mới hoạt động ngay lập tức
